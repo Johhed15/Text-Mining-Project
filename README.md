@@ -1,2 +1,22 @@
-# Text-Mining-Project
+# Text Mining Project
 Project in the text mining course 732A81
+
+This repository explores a comparative study on the performance of SQL-tuned T5 model and fine-tuning it on self made questions to see improvements. The best model is then incorporated into a Retrieval-Augmented Generation (RAG) pipeline. The analysis leverages a self-curated dataset of questions and answers, demonstrating the strengths and weaknesses of each approach.
+
+## Project Overview
+
+### Objectives
+1. **Model Comparison**: Evaluate the effectiveness of a T5 model tuned to generate SQL queries versus a traditional fine-tuned T5 model on a domain-specific dataset.
+2. **Integration**: Integrate both approaches into a RAG pipeline for answering complex queries.
+3. **Analysis**: Assess performance using metrics such as accuracy and ROUGE 2, focusing on SQL execution success rates.
+
+### Dataset
+- **Source**: Self-created questions based on domain-specific knowledge.
+- **Location**: The CSV dataset is hosted on Kaggle.
+- **Format**: CSV files converted into SQL databases.
+- **Scope**: Covers a range of years (2000-2015) with detailed metadata for realistic query generation.
+
+### Key Components
+1. **SQL-Tuned T5**: A T5 model adapted to translate natural language queries into SQL statements.
+2. **Fine-Tuned T5**: A T5 model fine-tuned on self made questions and SQL queries.
+3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
