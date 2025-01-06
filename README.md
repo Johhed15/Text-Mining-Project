@@ -17,6 +17,6 @@ This repository explores a comparative study on the performance of SQL-tuned T5 
 - **Scope**: Covers a range of years (2000-2015) with detailed metadata for realistic query generation.
 
 ### Key Components
-1. **SQL-Tuned T5**: A T5 model adapted to translate natural language queries into SQL statements.
+1. **SQL-Tuned T5**: A T5 model( [juierror/flan-t5-text2sql-with-schema-v2](https://huggingface.co/juierror/flan-t5-text2sql-with-schema-v2)) adapted to translate natural language queries into SQL statements.
 2. **Fine-Tuned T5**: A T5 model fine-tuned on self made questions and SQL queries.
-3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
+3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
