@@ -20,3 +20,6 @@ This repository explores a comparative study on the performance of SQL-tuned T5 
 1. **SQL-Tuned T5**: A T5 model( [juierror/flan-t5-text2sql-with-schema-v2](https://huggingface.co/juierror/flan-t5-text2sql-with-schema-v2)) adapted to translate natural language queries into SQL statements.
 2. **Fine-Tuned T5**: A T5 model fine-tuned on self made questions and SQL queries.
 3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
+
+
+The paper is written in latex in the ACL-style, the acl files are from [Acl-org github repo](https://github.com/acl-org/acl-style-files/) and are needed to go from latex to pdf.
