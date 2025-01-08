@@ -7,8 +7,8 @@ This repository explores a comparative study on the performance of SQL-tuned T5 
 
 ### Objectives
 1. **Model Comparison**: Evaluate the effectiveness of a T5 model tuned to generate SQL queries versus a traditional fine-tuned T5 model on a domain-specific dataset.
-2. **Integration**: Integrate both approaches into a RAG pipeline for answering complex queries.
-3. **Analysis**: Assess performance using metrics such as accuracy and ROUGE 2, focusing on SQL execution success rates.
+2. **Integration**: Integrate the best approaches into a RAG pipeline for answering complex queries.
+3. **Analysis**: Assess performance using metrics such as accuracy, exact matching and ROUGE 2, focusing on SQL execution success rates.
 
 ### Dataset
 - **Source**: Self-created questions based on domain-specific knowledge.
