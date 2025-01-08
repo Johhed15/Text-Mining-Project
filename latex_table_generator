@@ -1,0 +1,27 @@
+# created a function to quickly create latex table for all my questions
+
+def convert_to_latex(questions):
+    output = []
+    for item in questions:
+        question = item.get("Question", "")
+        sql = item.get("SQL", "").replace("_", "\\_").replace("\n", " ").strip()
+        analysis = item.get("Analysis")  # Check if Analysis exists
+
+        # Format the output based on the presence of Analysis
+        if analysis:
+            latex_entry = (
+                f"{question} & "
+                f"\texttt{{{sql}}} & "
+                f"{analysis} \\ \hline"
+            )
+        else:
+            latex_entry = (
+                f"{question} & "
+                f"\texttt{{{sql}}}  \\ \hline"
+            )
+        output.append(latex_entry)
+
+    # Join the entries with a newline for readability
+    return "\n".join(output)
+
+
