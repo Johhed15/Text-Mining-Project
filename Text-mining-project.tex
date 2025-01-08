@@ -1,0 +1,483 @@
+% This must be in the first 5 lines to tell arXiv to use pdfLaTeX, which is strongly recommended.
+\pdfoutput=1
+% In particular, the hyperref package requires pdfLaTeX in order to break URLs across lines.
+
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{Comparing text-to-SQL retrievers in a RAG system to extract the wanted data \\ \large \textit{Project in text mining 732A81}}
+
+
+\author{ Johannes Hedström\\ \texttt{johed883@student.liu.se}, Linköping University 
+  }
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This project evaluates the fine-tuning of text-to-SQL models for enhancing database query generation in Retrieval-Augmented Generation (RAG) systems, using the WHO Life Expectancy dataset. A pre-tuned Flan-T5 retriever was compared to an extended version further fine-tuned on self-annotated questions. The meta-llama/Llama-3.2-1B is used as the generator for the system. Assessments were conducted using execution accuracy, Exact Matching, ROUGE-2 scores, and human evaluations. Marginal improvements in exact matching were observed, while human evaluators rated outputs favorably despite low automated scores. Challenges include semantic misinterpretations and difficulty with complex queries. Suggestions include expanding training datasets, diversifying annotators, and refining hyperparameters to improve performance. This work highlights the potential of text-to-SQL models to simplify database access for non-technical users while identifying areas for improvement.
+
+\end{abstract}
+
+\section{Introduction}
+
+The use and collection of data has never been more widespread, yet not all individuals who wish to utilize data know how to retrieve it from databases. SQL databases require proficiency in SQL and domain-specific knowledge to extract the desired data. In recent years, researchers have sought to address this challenge with text-to-SQL models, also known as semantic interpretation models, which translate natural language into structured queries such as SQL \cite{spider}. These models aim to make database interaction more accessible to users without specialized technical skills\cite{metadata}. The trajectory of research in this domain has evolved from the use of smaller, domain-specific datasets to the adoption of larger, more complex, and cross-domain datasets \cite{spider}.
+
+The retrieved data can then be used in a Retrieval-Augmented Generation-system to provide users with comprehensive text-based answers, rather than mere sets of data points \cite{metadata}. Retrieval-Augmented Generation (RAG) is a technique that combines the capabilities of large language models (LLMs) with information from external knowledge bases to enhance text generation. 
+
+This paper will focus on the evaluating and fine-tuning of text-to-SQL models for enhanced database query generation and the best retriever will be used in a RAG-system to analyze its capacity for generating accurate answers.
+
+\section{Theory}
+\subsection{Semantic parsing}
+
+Semantic parsing, the task of translating natural language into formal meaning representations like logical forms or structured queries, is a key area of research \cite{dong2016language}. Traditionally, this task relies on predefined templates and manually designed features, making parsing models specific to certain domains or representations. However, recent approaches use machine learning methods to bridge the gap between natural language and logical forms with minimal domain knowledge \cite{dong2016language}.
+
+\subsection{Text-to-Text Transfer Transformer}
+
+The Text-to-Text Transfer Transformer (T5) framework is introduced as a way to approach all text processing problems as text-to-text tasks \cite{TextTTextTransformer}. This framework allows for a unified approach for comparing the effectiveness of transfer learning objectives, unlabeled datasets, and other factors. The goal is to provide a comprehensive perspective on the field of NLP rather than proposing new methods \cite{dong2016language}.
+
+\begin{itemize}
+
+    \item \textbf{Architecture} T5 employs an encoder-decoder architecture, where the encoder processes the input text and the decoder generates the output text \cite{t5scaling}. This architecture is particularly well-suited for sequence-to-sequence tasks.  
+    
+    \item \textbf{Span corruption} The T5 model is trained using a span corruption method, where random spans of text within the input are masked, and the model is trained to reconstruct the masked portions \cite{dong2016language}. This approach enables the model to effectively learn both text comprehension and generation \cite{t5scaling}.  
+    
+    \item \textbf{Instruction Fine-Tuning (Flan)} A specialized form of fine-tuning, known as instruction fine-tuning, involves training the model on a collection of datasets formulated as instructions \cite{t5scaling}. This technique enhances the model's ability to follow instructions and generalize to new tasks. Flan-T5, which utilizes this method, has demonstrated exceptional performance, even surpassing larger models in some cases.
+\end{itemize}
+\section{Data}
+
+The dataset employed for the database in this study is the WHO Life Expectancy dataset \cite{WHOdata} from Kaggle, which comprises 2,938 rows and 22 columns. Among these, two variables are strings, nine are integers, and eleven are floating-point numbers. Full description of the variables are in Table~\ref{append:1}.
+
+\subsection{Data Preprocessing}
+The Life Expectancy dataset was preprocessed to ensure consistency and usability. This included:
+\begin{itemize}
+    \item Normalizing column names for better query compatibility with underscores where there is spaces.
+    \item Converting the dataset into a SQL-compatible format for seamless query execution with the sqlite3 package \cite{sqlite}.
+\end{itemize}
+
+Additionally, the country names in the dataset are highly specific (eg.'United Kingdom of Great Britain and Northern Ireland'), which may pose challenges in matching them against generated queries unless the model has been explicitly trained on all possible variations. To address this, a function have been implemented to match the generated country names in the queries to the closest corresponding country name in the database.
+
+\subsection{Self annotated data}
+
+For fine-tuning:
+65 medium to hard questions with working SQL queries on the Life expectancy database was created, 53 of those were used in the training set and 12 in the validation set. A table of the questions can be found in Table~\ref{append:2} ~\ref{append:3} ~\ref{append:4}.
+
+10 evaluation questions with SQL queries and short analysis were also created to evaluate the models first the retrieving data and secondly the generated answers.  A table of the questions can be found in Table~\ref{append:5} ~\ref{append:6}.
+
+\section{Method}
+
+\subsection{Retriever}
+
+The base retriever will be a tuned flan-t5-base with 248M params \cite{flant5} named 'flan-t5-text2sql-with-schema-v2'\cite{t5tuned}, it is trained on three text-to-SQL datasets :
+\begin{itemize}
+    \item \textbf{Spider} with 10,181 questions and 5,693 unique complex SQL queries \cite{spider}.
+    \item \textbf{SParC} with over 12,000 unique individual questions annotated with SQL queries annotated by 14 Yale students \cite{sparc}.
+    \item \textbf{CoSQL} consists of over 30,000 turns plus over 1,000 annotated SQL queries \cite{cosql}.
+\end{itemize}
+
+
+\subsection{Model Fine-tuning}
+The base model will be fine tuned on the 65 self annotated question with the following fine tuning parameters:
+\begin{itemize}
+    \item \textbf{learning\_rate=1e-5}: The learning rate for the optimizer is set to $1 \times 10^{-5}$. A low learning rate may result in slower convergence but can also lead to more stable training.
+    \item \textbf{per\_device\_train\_batch\_size=5}: The training batch size per device (GPU/CPU) is set to 5. This means each device will process 5 training examples at a time.
+    \item \textbf{weight\_decay=0.1}: Weight decay is set to 0.1. This is a regularization technique that helps prevent overfitting.
+    \item \textbf{num\_train\_epochs=4}: The model will be trained for 4 epochs. An epoch means that the entire training dataset has passed through the model once.
+    \item \textbf{lr\_scheduler\_type="cosine"}: A cosine-based learning rate scheduler will be used. This type of scheduler can provide good results by adjusting the learning rate throughout the training process.
+\end{itemize}
+
+\subsection{Generator}
+
+The language model used as a generator is meta-llama/Llama-3.2-1B \cite{Llama} with 3.21 billion parameters, which is considered a lightweight in the cense of large language models\cite{touvron2023llama}. This will be used as models of this size are often more cost-effective to run compared to larger models. The model will be run on Kaggle using two T4 GPU's. 
+
+The LLama model will be given instructions on what it is supposed to do, the user question, the retrieved data and a description of the database as a prompt seen in ~\ref{append:8}. Where user input contains the question and retrieved data ~\ref{append:9}.
+
+\subsection{Evaluation Metrics}
+The retriever performance was assessed using:
+\begin{itemize}
+    \item \textbf{Execution Accuracy:} The proportion of correct retrieved data compared to the ground truth, this is used as SQL queries can look different but still retrieve the same data \cite{spider}.
+    \item \textbf{Exact matching:} This method measures whether the entire generated SQL query is identical to the actual SQL query \cite{spider}. The model is considered correct only if all components of the query match. This method is strict and evaluates the overall accuracy of the generated SQL query .
+\end{itemize}
+
+The generator performance was assessed using:
+\begin{itemize}
+    \item \textbf{ROUGE 2:} ROUGE-2(Recall-Oriented Understudy for Gisting Evaluation) is an evaluation metric used to measure the overlap of bigrams (sequences of two words) between a generated text and a reference text \cite{ROUGE}.
+    \item \textbf{Human evaluation:} Human evaluation can capture nuances that automatic metrics cannot.
+    
+\end{itemize}
+
+
+
+
+\section{Results}
+
+The fine-tuned model exhibited a slight improvement in exact matching; however, challenges persist in handling more complex SQL queries.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Exact Matching} \\ \hline
+Base           & 0.7                    & 0.5                       \\ \hline
+Tuned          & 0.7                    & 0.6                       \\ \hline
+\end{tabular}
+\caption{Execution Accuracy and Exact Matching for Base and Tuned Models}
+\label{tab:accuracy_em}
+\end{table}
+
+Out of the 10 evaluation questions, both models make mistakes on these three questions with respective generated query(Generated query means that both models generated the same SQL query):
+
+"What was the difference in average life expectancy between Japan and Chad?"
+Generated query: \texttt{SELECT avg(Life\_expectancy) FROM Life\_expectancy WHERE Country = "Japan" INTERSECT SELECT avg(Life\_expectancy) FROM Life\_expectancy WHERE Country = "Chad"}
+
+The error in the generated SQL query stems from an improper application of the INTERSECT operator. The query attempts to find the intersection between two average life expectancy values for Japan and Chad. However, the intersection operator is intended to return rows where both queries have identical results. In this context, this is problematic because the goal of the query is to compute the difference in life expectancy between the two countries, not to compare identical values. 
+
+"Which country had the highest percentage of expenditure on health in 2015 and what was it?"
+
+Generated query: \texttt{SELECT Country, Total\_expenditure FROM Life\_expectancy WHERE YEAR = 2015 ORDER BY Total\_expenditure DESC LIMIT 1}
+
+The model generates an incorrect SQL query by selecting the Total\_expenditure column instead of the appropriate Percent\_expenditure column. The query also fails to return the value of the expenditure, but rather only the country with the highest total expenditure. This results in a mismatch between the question's requirements and the database query.
+
+"Which country had the maximum improvement in life expectancy between the years 2000 and 2015?"
+
+Generated query base: \texttt{SELECT Country FROM Life\_expectancy WHERE YEAR >= 2000 AND YEAR < = 2015 GROUP BY Country ORDER BY max(Life\_expectancy) DESC LIMIT 1}
+
+ first mistake in this query is the syntactical error resulting from the incorrect placement of spaces around the <= operator. Beyond this, the query is conceptually flawed as it tries to take the country with the highest life expectancy and not the maximum improvement over the 15-year span.
+
+Generated query tuned:\texttt{SELECT Country FROM Life\_expectancy WHERE YEAR BETWEEN 2000 AND 2015 ORDER BY Life\_expectancy DESC LIMIT 1}
+
+While the syntax error is corrected in the tuned query, the underlying issue remains. 
+
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{0.18\textwidth}|p{0.18\textwidth}|}
+\hline
+\textbf{Questions} & \textbf{Average Rouge 2 score} \\ \hline
+All questions           & 0.10917                   \\ \hline
+Correctly retrieved questions          & 0.148497         \\ \hline          
+\end{tabular}
+\caption{Execution Accuracy and Exact Matching for Base and Tuned Models}
+\label{tab:Rouge}
+\end{table}
+
+Low Rouge 2 scores but performs well when human evaluations are considered as while the words might not match that much, the content does. Especially when the retriever have successfully collected the correct data, which can be seen in Table~\ref{append:7}.
+
+\section{Discussion}
+
+The mistakes the models have done seems to be semantic or logic understanding, for example Total\_expenditure instead of Percent\_expenditure, another problem here is that the question is not very specific regarding the expenditure, as the variables does not differ that much. Mistakes could also be misinterpretations of query intents like it misses improvement in question eight in Table~\ref{append:5}.
+
+To enhance the fine-tuning process, increasing the dataset size should be prioritized. Moreover, involving multiple individuals in the creation of SQL queries would mitigate potential biases and reduce time constraints. Experimenting with alternative hyperparameters during training, as well as adjusting the values of existing ones, could further refine model performance.
+
+While T5 has been utilized as the retriever, research suggests that other models, such as ColBERT, demonstrate promising results for this task \cite{Lin2023}.
+
+The generated analyses are good as long as the queries are correct or does not work, but when the incorrect data have been received, here an addition could be added. As for the eight question in Table~\ref{append:7} the generated answers make 
+
+Limitations of this project:
+The primary limitation of this project is the time required to craft questions and corresponding SQL queries, which can be both time-consuming and inefficient. Access to computational resources have also been limited. 
+
+
+
+\section{Conclusion}
+
+The limited self-annotated dataset and brief training duration resulted in improvements solely on the exact match metric, which ultimately did not influence the overall system performance. 
+Despite the low average ROUGE-2 scores, the Llama model used for generation demonstrated effective performance, as the generated responses were consistent with human evaluations.
+
+
+\bibliography{biblio}
+
+
+\newpage
+\appendix
+\section{Appendix}
+
+\label{sec:appendix}
+
+
+
+\begin{quote}
+\texttt{System: You are a Generator (Knowledge assistant) in a RAG system tasked with providing a concise and detailed analysis of the data retrieved based on the user's question in 2 sentences. Ensure clarity and focus on the key details. The retriever can make mistakes.}
+\\
+\texttt{Database description: \{table\_desc\}}
+\\
+\texttt{User input: \{user\_input\}}
+\\
+\texttt{Assistant:}
+\label{append:8}
+\end{quote}
+
+
+\section{}
+\begin{quote}
+\texttt{User question: \{question\} }\\
+\texttt{Retrieved Data: \{data\}}
+\label{append:9}
+\end{quote}
+
+
+
+\section{Tables}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.35\textwidth}|p{0.6\textwidth}|}
+\hline
+\textbf{Attribute} & \textbf{Description} \\ \hline
+Country & Number of countries (193) \\ \hline
+Year & Year range (2000 - 2015) \\ \hline
+Status & Development status (Developed or Developing) \\ \hline
+Life\_expectancy & Life expectancy in age \\ \hline
+Adult\_Mortality & Adult mortality rates (probability of dying between 15 and 60 years per 1000 population) \\ \hline
+infant\_deaths & Number of infant deaths per 1000 population \\ \hline
+Alcohol & Alcohol consumption per capita (15+) in litres \\ \hline
+percentage\_expenditure & Health expenditure as \% of GDP per capita \\ \hline
+Hepatitis\_B & Hepatitis B immunization coverage (\%) among 1-year-olds \\ \hline
+Measles & Measles cases per 1000 population \\ \hline
+BMI & Average Body Mass Index of population \\ \hline
+under\_five\_deaths & Number of under-five deaths per 1000 population \\ \hline
+Polio & Polio immunization coverage (\%) among 1-year-olds \\ \hline
+Total\_expenditure & Government health expenditure as \% of total expenditure \\ \hline
+Diphtheria & Diphtheria immunization coverage (\%) among 1-year-olds \\ \hline
+HIV\_AIDS & Deaths due to HIV/AIDS per 1000 live births (0-4 years) \\ \hline
+GDP & Gross Domestic Product per capita (USD) \\ \hline
+Population & Population of the country \\ \hline
+thinness\_1\_19\_years & Prevalence of thinness (age 10-19) (\%) \\ \hline
+thinness\_5\_9\_years & Prevalence of thinness (age 5-9) (\%) \\ \hline
+Income\_composition\_of\_resources & Human Development Index (income composition) \\ \hline
+Schooling & Average years of schooling \\ \hline
+\end{tabular}
+\caption{Dataset Description Table}
+\label{append:1}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.35\textwidth}|p{0.6\textwidth}|}
+\hline
+\textbf{Question} & \textbf{SQL Query} \\
+\hline
+Which country had the maximum life expectancy? & \texttt{SELECT Country FROM Life\_Expectancy ORDER BY Life\_expectancy DESC LIMIT 1} \\ \hline
+What is the difference in average life expectancy between France and Germany? & \texttt{SELECT (SELECT AVG(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'France') - (SELECT AVG(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'Germany') AS Life\_Expectancy\_Difference} \\ \hline
+What is the average life expectancy for the top 5 countries with the highest GDP in 2010? & \texttt{SELECT AVG(Life\_expectancy) FROM (SELECT Country, AVG(Life\_expectancy) AS Life\_expectancy FROM Life\_Expectancy WHERE Year = 2010 ORDER BY GDP DESC LIMIT 5) AS Top5Countries} \\ \hline
+Which country had the largest percentage increase in life expectancy from 2000 to 2015? & \texttt{SELECT Country, ((MAX(Life\_expectancy) - MIN(Life\_expectancy)) / MIN(Life\_expectancy)) * 100 AS Percentage\_Change FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2015 GROUP BY Country ORDER BY Percentage\_Change DESC LIMIT 1} \\ \hline
+Which year had the greatest disparity in life expectancy between countries? & \texttt{SELECT Year, MAX(Life\_expectancy) - MIN(Life\_expectancy) AS Disparity FROM Life\_Expectancy GROUP BY Year ORDER BY Disparity DESC LIMIT 1} \\ \hline
+Which country had the highest average alcohol consumption between 2000 and 2015? & \texttt{SELECT Country, AVG(Alcohol) AS Avg\_Alcohol FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2015 GROUP BY Country ORDER BY Avg\_Alcohol DESC LIMIT 1} \\ \hline
+What is the correlation between percentage expenditure on health and life expectancy for developed countries? & \texttt{SELECT CORR(percentage\_expenditure, Life\_expectancy) AS Correlation FROM Life\_Expectancy WHERE Status = 'Developed'} \\ \hline
+What is the total number of under-five deaths in developing countries in 2010? & \texttt{SELECT SUM(under\_five\_deaths) AS Total\_Under\_Five\_Deaths FROM Life\_Expectancy WHERE Status = 'Developing' AND Year = 2010} \\ \hline
+Which country had the highest BMI in 2015 and what was it? & \texttt{SELECT Country, MAX(BMI) AS max\_bmi FROM Life\_Expectancy WHERE Year = 2015} \\ \hline
+Which year had the highest number of infant deaths and what was it? & \texttt{SELECT Year, SUM(infant\_deaths) AS Total\_Infant\_Deaths FROM Life\_Expectancy GROUP BY Year ORDER BY Total\_Infant\_Deaths DESC LIMIT 1} \\ \hline
+Which country had the maximum life expectancy increase between 2000 and 2010? & \texttt{SELECT Country FROM (SELECT Country, MAX(Life\_expectancy) - MIN(Life\_expectancy) AS Life\_Expectancy\_Change FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2010 GROUP BY Country) ORDER BY Life\_Expectancy\_Change DESC LIMIT 1} \\ \hline
+Which country spent the highest percentage of expenditure on health? & \texttt{SELECT Country FROM Life\_Expectancy WHERE percentage\_expenditure = (SELECT MAX(percentage\_expenditure) FROM Life\_Expectancy)} \\ \hline
+Which country had the highest GDP per capita in 2005 and what was the value? & \texttt{SELECT Country, MAX(GDP) AS Highest\_GDP FROM Life\_Expectancy WHERE Year = 2005} \\ \hline
+Which country had the most cases of measles in 2005? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2005 AND Measles = (SELECT MAX(Measles) FROM Life\_Expectancy WHERE Year = 2005)} \\ \hline
+\end{tabular}
+\caption{Self Annotated Questions Table - Part 1}
+\label{append:2}
+\end{table*}
+
+\newpage
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.35\textwidth}|p{0.6\textwidth}|}
+\hline
+\textbf{Question} & \textbf{SQL Query} \\
+\hline
+
+Which country had the highest number of under-five deaths in 2010? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2010 AND under\_five\_deaths = (SELECT MAX(under\_five\_deaths) FROM Life\_Expectancy WHERE Year = 2010)} \\ \hline
+Which year had the highest total expenditure on health? & \texttt{SELECT Year FROM Life\_Expectancy WHERE Total\_expenditure = (SELECT MAX(Total\_expenditure) FROM Life\_Expectancy)} \\ \hline
+Which country had the highest HIV/AIDS mortality rate? & \texttt{SELECT Country FROM Life\_Expectancy WHERE HIV\_AIDS = (SELECT MAX(HIV\_AIDS) FROM Life\_Expectancy)} \\ \hline
+Which year had the maximum number of under-five deaths globally? & \texttt{SELECT Year FROM Life\_Expectancy WHERE under\_five\_deaths = (SELECT MAX(under\_five\_deaths) FROM Life\_Expectancy)} \\ \hline
+Which country had the largest population in the dataset? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Population = (SELECT MAX(Population) FROM Life\_Expectancy)} \\ \hline
+What is the mean thinness percentage for children aged 1 to 19 years? & \texttt{SELECT AVG(thinness\_1\_19\_years) FROM Life\_Expectancy} \\ \hline
+Which country had the lowest income composition of resources? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Income\_composition\_of\_resources = (SELECT MIN(Income\_composition\_of\_resources) FROM Life\_Expectancy)} \\ \hline
+What is the global average for under\_five deaths? & \texttt{SELECT AVG(under\_five\_deaths) FROM Life\_Expectancy} \\ \hline
+Which country had the lowest GDP in 2005? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2005 ORDER BY GDP ASC LIMIT 1} \\ \hline
+What is the difference in total health expenditure as a percentage of GDP between the United States and the United Kingdom in 2010? & \texttt{SELECT (SELECT Total\_expenditure FROM Life\_Expectancy WHERE Country = 'United States' AND Year = 2010) - (SELECT Total\_expenditure FROM Life\_Expectancy WHERE Country = 'United Kingdom' AND Year = 2010) AS Expenditure\_Difference} \\ \hline
+Which year had the highest alcohol consumption globally? & \texttt{SELECT Year FROM Life\_Expectancy WHERE Alcohol = (SELECT MAX(Alcohol) FROM Life\_Expectancy)} \\ \hline
+Which country had the lowest diphtheria immunization rate in 2015? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2015 AND Diphtheria = (SELECT MIN(Diphtheria) FROM Life\_Expectancy WHERE Year = 2015)} \\ \hline
+What is the average schooling years for developing countries? & \texttt{SELECT AVG(Schooling) FROM Life\_Expectancy WHERE Status = 'Developing'} \\ \hline
+Which country had the maximum improvement in life expectancy between 2000 and 2015? & \texttt{SELECT Country, (MAX(Life\_expectancy) - MIN(Life\_expectancy)) AS Improvement FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2015 GROUP BY Country ORDER BY Improvement DESC LIMIT 1} \\ \hline
+Which year had the lowest average life expectancy? & \texttt{SELECT Year FROM Life\_Expectancy GROUP BY Year ORDER BY AVG(Life\_expectancy) ASC LIMIT 1} \\ \hline
+Which country had the most significant improvement in BMI between 2000 and 2015? & \texttt{SELECT Country, (MAX(BMI) - MIN(BMI)) AS Improvement FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2015 GROUP BY Country ORDER BY Improvement DESC LIMIT 1} \\ \hline
+
+\end{tabular}
+\caption{Self Annotated Questions Table - Part 2}
+\label{append:3}
+\end{table*}
+
+\newpage
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.35\textwidth}|p{0.6\textwidth}|}
+\hline
+\textbf{Question} & \textbf{SQL Query} \\
+\hline
+
+Which country had the most infant deaths in 2010? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2010 AND infant\_deaths = (SELECT MAX(infant\_deaths) FROM Life\_Expectancy WHERE Year = 2010)} \\ \hline
+Which country had the highest percentage expenditure in 2007? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2007 AND percentage\_expenditure = (SELECT MAX(percentage\_expenditure) FROM Life\_Expectancy WHERE Year = 2007)} \\ \hline
+What is the global average income composition of resources? & \texttt{SELECT AVG(Income\_composition\_of\_resources) FROM Life\_Expectancy} \\ \hline
+Which year had the highest global adult mortality rate? & \texttt{SELECT Year FROM Life\_Expectancy WHERE Adult\_Mortality = (SELECT MAX(Adult\_Mortality) FROM Life\_Expectancy)} \\ \hline
+Which country had a greater improvement in life expectancy between 2000 and 2015: Japan or South Korea? & \texttt{SELECT CASE WHEN (SELECT MAX(Life\_expectancy) - MIN(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'Japan' AND Year BETWEEN 2000 AND 2015) > (SELECT MAX(Life\_expectancy) - MIN(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'South Korea' AND Year BETWEEN 2000 AND 2015) THEN 'Japan' ELSE 'South Korea' END AS Greater\_Improvement} \\ \hline
+Which country had the maximum schooling years in 2010? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2010 AND Schooling = (SELECT MAX(Schooling) FROM Life\_Expectancy WHERE Year = 2010)} \\ \hline
+Which year had the lowest average Gross Domestic Product? & \texttt{SELECT Year FROM Life\_Expectancy GROUP BY Year ORDER BY AVG(GDP) ASC LIMIT 1} \\ \hline
+Which country had the lowest Gross Domestic Product in 2005? & \texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2005 AND GDP = (SELECT MIN(GDP) FROM Life\_Expectancy WHERE Year = 2005)} \\ \hline
+Which country had the lowest BMI in 2015 and what was it? & \texttt{SELECT Country, MIN(BMI) FROM Life\_Expectancy WHERE Year = 2015} \\ \hline
+
+\end{tabular}
+\caption{Self Annotated Questions Table - Part 3}
+\label{append:4}
+\end{table*}
+
+
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.3\textwidth}|p{0.35\textwidth}|p{0.3\textwidth}|}
+\hline
+\textbf{Question} & \textbf{SQL Query} & \textbf{Analysis} \\ \hline
+
+What was the Gross Domestic Product in France in the year 2005? & 
+\texttt{SELECT GDP FROM Life\_Expectancy WHERE Country = 'France' AND Year = 2005} & 
+France's GDP in 2005 was \$34,879.73. \\ \hline
+
+What is the average life expectancy in Sweden? & 
+\texttt{SELECT AVG(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'Sweden'} & 
+The average life expectancy in Sweden is 82.51875. \\ \hline
+
+Which country had the highest alcohol consumption in 2007? & 
+\texttt{SELECT Country FROM Life\_Expectancy WHERE Year = 2007 ORDER BY Alcohol DESC LIMIT 1} & 
+In 2007, Estonia had the highest alcohol consumption. \\ \hline
+
+What was the difference in average life expectancy between Japan and Chad? & 
+\texttt{SELECT (SELECT AVG(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'Japan') - (SELECT AVG(Life\_expectancy) FROM Life\_Expectancy WHERE Country = 'Chad') AS Life\_Expectancy\_Difference} & 
+The life expectancy difference between Japan and Chad in 2012 was 31.5 years. \\ \hline
+
+What was the population of Zimbabwe in the year 2000? & 
+\texttt{SELECT Population FROM Life\_Expectancy WHERE Country = 'Zimbabwe' AND Year = 2000} & 
+Zimbabwe’s population in 2000 was approximately 12.22 million. \\ \hline
+
+Which country had the highest percentage of expenditure on health in 2015 and what was it? & 
+\texttt{SELECT Country, percentage\_expenditure FROM Life\_Expectancy WHERE Year = 2015 ORDER BY percentage\_expenditure DESC LIMIT 1} & 
+In 2015, Albania had the highest percentage expenditure on health, at 364.9752287\%. \\ \hline
+
+What was the BMI in Togo in 2008? & 
+\texttt{SELECT BMI FROM Life\_Expectancy WHERE Country = 'Togo' AND Year = 2008} & 
+The BMI of adults in Togo in 2008 was exceptionally low at 2.4. \\ \hline
+
+Which country had the maximum improvement in life expectancy between the years 2000 and 2015? & 
+\texttt{SELECT Country, MAX(Life\_Expectancy\_Change) AS Max\_Improvement FROM (SELECT Country, MAX(Life\_expectancy) - MIN(Life\_expectancy) AS Life\_Expectancy\_Change FROM Life\_Expectancy WHERE Year BETWEEN 2000 AND 2015 GROUP BY Country)} & 
+Haiti showed the greatest improvement in life expectancy between 2000 and 2015. \\ \hline
+
+\end{tabular}
+\caption{Questions, SQL Queries, and Analyses for Life Expectancy Dataset}
+\label{tab:questions_sql_analysis - Part 1}
+\label{append:5}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.3\textwidth}|p{0.35\textwidth}|p{0.3\textwidth}|}
+\hline
+\textbf{Question} & \textbf{SQL Query} & \textbf{Analysis} \\ \hline
+
+What is the mean of infant deaths in South Sudan in the dataset? & 
+\texttt{SELECT AVG(infant\_deaths) FROM Life\_Expectancy WHERE Country = 'South Sudan'} & 
+The mean number of infant deaths per 1000 in South Sudan across all years in the dataset was 27.75. \\ \hline
+
+Which are the unique countries where status is developed? & 
+\texttt{SELECT DISTINCT(Country) FROM Life\_Expectancy WHERE Status = 'Developed'} & 
+The developed countries are Australia, Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Germany, Hungary, Iceland, Ireland, Italy, Japan, Latvia, Lithuania, Luxembourg, Malta, Netherlands, New Zealand, Norway, Poland, Portugal, Romania, Singapore, Slovakia, Slovenia, Spain, Sweden, Switzerland, United Kingdom of Great Britain and Northern Ireland, United States of America. \\ \hline
+
+\end{tabular}
+\caption{Questions, SQL Queries, and Analyses for Life Expectancy Dataset}
+\label{tab:questions_sql_analysis - Part 2}
+\label{append:6}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{|p{0.3\textwidth}|p{0.35\textwidth}|p{0.3\textwidth}|}
+\hline
+\textbf{Question} & \textbf{True Analysis} & \textbf{Generated Analysis} \\ \hline
+What was the Gross Domestic Product in France in the year 2005? & 
+France's GDP in 2005 was \$34,879.73. & 
+The Gross Domestic Product in France in the year 2005 was 34879.72633 USD. \\ \hline
+What is the average life expectancy in Sweden? & 
+The average life expectancy in Sweden is 82.51875. & 
+The average life expectancy in Sweden is 82.51875 years. \\ \hline
+Which country had the highest alcohol consumption in 2007? & 
+In 2007, Estonia had the highest alcohol consumption. & 
+The country with the highest alcohol consumption in 2007 was Estonia with 11.6 litres of pure alcohol per capita (15+). \\ \hline
+What was the difference in average life expectancy between Japan and Chad? & 
+The life expectancy difference between Japan and Chad in 2012 was 31.5 years. & 
+The SQL query didn't go through, failed to retrieve any data. \\ \hline
+What was the population of Zimbabwe in the year 2000? & 
+Zimbabwe’s population in 2000 was approximately 12.22 million. & 
+The population of Zimbabwe in the year 2000 was 12,222,251. \\ \hline
+Which country had the highest percentage of expenditure on health in 2015 and what was it? & 
+In 2015, Albania had the highest percentage expenditure on health, at 364.9752287%. 
+& 
+The country with the highest percentage of expenditure on health in 2015 was Afghanistan with 8.16%.  
+\\ \hline
+What was the BMI in Togo in 2008? & 
+The BMI of adults in Togo in 2008 was exceptionally low at 2.4. & 
+BMI in Togo in 2008: 2.4. \\ \hline
+Which country had the maximum improvement in life expectancy between the years 2000 and 2015? & 
+Haiti showed the greatest improvement in life expectancy between 2000 and 2015. & 
+The country with the maximum improvement in life expectancy between the years 2000 and 2015 is Belgium. The life expectancy in Belgium increased from 77.5 years in 2000 to 80.7 years in 2015, an increase of 3.2 years. \\ \hline
+What is the mean of infant deaths in South Sudan in the dataset? & 
+The mean number of infant deaths per 1000 in South Sudan across all years in the dataset was 27.75. & 
+The mean of infant deaths in South Sudan is 27.75. \\ \hline
+Which are the unique countries where status is developed? & 
+The unique countries are Australia, Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Germany, Hungary, Iceland, Ireland, Italy, Japan, Latvia, Lithuania, Luxembourg, Malta, Netherlands, New Zealand, Norway, Poland, Portugal, Romania, Singapore, Slovakia, Slovenia, Spain, Sweden, Switzerland, United Kingdom of Great Britain and Northern Ireland, United States of America. & 
+The unique countries where status is developed are: Australia, Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Germany, Hungary, Iceland, Ireland, Italy, Japan, Latvia, Lithuania, Luxembourg, Malta, Netherlands, New Zealand, Norway, Poland, Portugal, Romania, Singapore, Slovakia, Slovenia, Spain, Sweden, Switzerland, United Kingdom of Great Britain and Northern Ireland, United States of America. \\ \hline
+\end{tabular}
+\caption{True and Generated Analysis}
+\label{append:7}
+\end{table*}
+
+
+
+
+
+\end{document}
+
