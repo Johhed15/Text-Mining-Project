@@ -41,7 +41,7 @@
 %
 % and set <dim> to something 5cm or larger.
 
-\title{Comparing text-to-SQL retrievers in a RAG system to extract the wanted data \\ \large \textit{Project in text mining 732A81}}
+\title{From Questions to Queries: Comparing Text-to-SQL Retrievers for RAG Systems Using Self-Annotated Questions \\ \large \textit{Project in text mining 732A81}}
 
 
 \author{ Johannes Hedström\\ \texttt{johed883@student.liu.se}, Linköping University 
@@ -51,15 +51,15 @@
 \maketitle
 
 \begin{abstract}
-This project evaluates the fine-tuning of text-to-SQL models for enhancing database query generation in Retrieval-Augmented Generation (RAG) systems, using the WHO Life Expectancy dataset. A pre-tuned Flan-T5 retriever was compared to an extended version further fine-tuned on self-annotated questions. The meta-llama/Llama-3.2-1B is used as the generator for the system. Assessments were conducted using execution accuracy, Exact Matching, ROUGE-2 scores, and human evaluations. Marginal improvements in exact matching were observed, while human evaluators rated outputs favorably despite low automated scores. Challenges include semantic misinterpretations and difficulty with complex queries. Suggestions include expanding training datasets, diversifying annotators, and refining hyperparameters to improve performance. This work highlights the potential of text-to-SQL models to simplify database access for non-technical users while identifying areas for improvement.
+This project evaluates the fine-tuning of text-to-SQL models for enhancing database query generation in Retrieval-Augmented Generation (RAG) systems, using the WHO Life Expectancy dataset. A pre-tuned Flan-T5 retriever was compared to an extended version further fine-tuned on self-annotated questions. The meta-llama/Llama-3.2-1B is used as the generator for the system. Assessments were conducted using execution accuracy, Exact Matching, ROUGE-2 scores and human evaluations. Marginal improvements in exact matching were observed for the retriever, human evaluations on generated outputs are considered as good despite low automated ROUGE-2 scores. The models face challenges with semantic misinterpretations and handling complex queries. Suggestions include expanding training datasets, diversifying annotators, and refining hyperparameters to improve performance. This work highlights the potential of text-to-SQL models to simplify database access for non-technical users while identifying areas for improvement.
 
 \end{abstract}
 
 \section{Introduction}
 
-The use and collection of data has never been more widespread, yet not all individuals who wish to utilize data know how to retrieve it from databases. SQL databases require proficiency in SQL and domain-specific knowledge to extract the desired data. In recent years, researchers have sought to address this challenge with text-to-SQL models, also known as semantic interpretation models, which translate natural language into structured queries such as SQL \cite{spider}. These models aim to make database interaction more accessible to users without specialized technical skills\cite{metadata}. The trajectory of research in this domain has evolved from the use of smaller, domain-specific datasets to the adoption of larger, more complex, and cross-domain datasets \cite{spider}.
+The use and collection of data has never been more widespread, yet not all individuals who wish to utilize data know how to retrieve it from databases. SQL databases require proficiency in SQL and domain-specific knowledge to extract the desired data. In recent years, researchers have sought to address this challenge with text-to-SQL models, which can be interpreted as semantic interpretation models, which translate natural language into structured queries such as SQL \cite{spider}. These models aim to make database interaction more accessible to users without specialized technical skills\cite{metadata}. The trajectory of research in this domain has evolved from the use of smaller, domain-specific datasets to the adoption of larger, more complex, and cross-domain datasets \cite{spider}.
 
-The retrieved data can then be used in a Retrieval-Augmented Generation-system to provide users with comprehensive text-based answers, rather than mere sets of data points \cite{metadata}. Retrieval-Augmented Generation (RAG) is a technique that combines the capabilities of large language models (LLMs) with information from external knowledge bases to enhance text generation. 
+The retrieved data can then be used in a Retrieval-Augmented Generation-system to provide users with comprehensive text-based answers, rather than mere sets of data points \cite{metadata}. Retrieval-Augmented Generation (RAG) is a technique that combines the capabilities of large language models (LLM) with information from external knowledge bases to enhance text generation. 
 
 This paper will focus on the evaluating and fine-tuning of text-to-SQL models for enhanced database query generation and the best retriever will be used in a RAG-system to analyze its capacity for generating accurate answers.
 
@@ -80,6 +80,7 @@ The Text-to-Text Transfer Transformer (T5) framework is introduced as a way to a
     
     \item \textbf{Instruction Fine-Tuning (Flan)} A specialized form of fine-tuning, known as instruction fine-tuning, involves training the model on a collection of datasets formulated as instructions \cite{t5scaling}. This technique enhances the model's ability to follow instructions and generalize to new tasks. Flan-T5, which utilizes this method, has demonstrated exceptional performance, even surpassing larger models in some cases.
 \end{itemize}
+
 \section{Data}
 
 The dataset employed for the database in this study is the WHO Life Expectancy dataset \cite{WHOdata} from Kaggle, which comprises 2,938 rows and 22 columns. Among these, two variables are strings, nine are integers, and eleven are floating-point numbers. Full description of the variables are in Table~\ref{append:1}.
@@ -113,7 +114,7 @@ The base retriever will be a tuned flan-t5-base with 248M params \cite{flant5} n
 
 
 \subsection{Model Fine-tuning}
-The base model will be fine tuned on the 65 self annotated question with the following fine tuning parameters:
+The base model will be fine tuned on the 65 self annotated question, several parameter values have been tested and to reduce overfitting the resulting fine tuning parameters are:
 \begin{itemize}
     \item \textbf{learning\_rate=1e-5}: The learning rate for the optimizer is set to $1 \times 10^{-5}$. A low learning rate may result in slower convergence but can also lead to more stable training.
     \item \textbf{per\_device\_train\_batch\_size=5}: The training batch size per device (GPU/CPU) is set to 5. This means each device will process 5 training examples at a time.
@@ -124,7 +125,7 @@ The base model will be fine tuned on the 65 self annotated question with the fol
 
 \subsection{Generator}
 
-The language model used as a generator is meta-llama/Llama-3.2-1B \cite{Llama} with 3.21 billion parameters, which is considered a lightweight in the cense of large language models\cite{touvron2023llama}. This will be used as models of this size are often more cost-effective to run compared to larger models. The model will be run on Kaggle using two T4 GPU's. 
+The large language model used as a generator is meta-llama/Llama-3.2-1B \cite{Llama} with 3.21 billion parameters, which is considered a lightweight in the cense of large language models\cite{touvron2023llama}. This will be used as models of this size are often more cost-effective to run compared to larger models. The model will be run on Kaggle using two T4 GPU's. 
 
 The LLama model will be given instructions on what it is supposed to do, the user question, the retrieved data and a description of the database as a prompt seen in ~\ref{append:8}. Where user input contains the question and retrieved data ~\ref{append:9}.
 
@@ -163,22 +164,22 @@ Tuned          & 0.7                    & 0.6                       \\ \hline
 
 Out of the 10 evaluation questions, both models make mistakes on these three questions with respective generated query(Generated query means that both models generated the same SQL query):
 
-"What was the difference in average life expectancy between Japan and Chad?"
+\textbf{"What was the difference in average life expectancy between Japan and Chad?"}
 Generated query: \texttt{SELECT avg(Life\_expectancy) FROM Life\_expectancy WHERE Country = "Japan" INTERSECT SELECT avg(Life\_expectancy) FROM Life\_expectancy WHERE Country = "Chad"}
 
 The error in the generated SQL query stems from an improper application of the INTERSECT operator. The query attempts to find the intersection between two average life expectancy values for Japan and Chad. However, the intersection operator is intended to return rows where both queries have identical results. In this context, this is problematic because the goal of the query is to compute the difference in life expectancy between the two countries, not to compare identical values. 
 
-"Which country had the highest percentage of expenditure on health in 2015 and what was it?"
+\textbf{"Which country had the highest percentage of expenditure on health in 2015 and what was it?"}
 
 Generated query: \texttt{SELECT Country, Total\_expenditure FROM Life\_expectancy WHERE YEAR = 2015 ORDER BY Total\_expenditure DESC LIMIT 1}
 
 The model generates an incorrect SQL query by selecting the Total\_expenditure column instead of the appropriate Percent\_expenditure column. The query also fails to return the value of the expenditure, but rather only the country with the highest total expenditure. This results in a mismatch between the question's requirements and the database query.
 
-"Which country had the maximum improvement in life expectancy between the years 2000 and 2015?"
+\textbf{"Which country had the maximum improvement in life expectancy between the years 2000 and 2015?"}
 
 Generated query base: \texttt{SELECT Country FROM Life\_expectancy WHERE YEAR >= 2000 AND YEAR < = 2015 GROUP BY Country ORDER BY max(Life\_expectancy) DESC LIMIT 1}
 
- first mistake in this query is the syntactical error resulting from the incorrect placement of spaces around the <= operator. Beyond this, the query is conceptually flawed as it tries to take the country with the highest life expectancy and not the maximum improvement over the 15-year span.
+ The first mistake in this query is the syntactical error resulting from the incorrect placement of spaces around the <= operator. Beyond this, the query is conceptually flawed as it tries to take the country with the highest life expectancy and not the maximum improvement over the 15-year span.
 
 Generated query tuned:\texttt{SELECT Country FROM Life\_expectancy WHERE YEAR BETWEEN 2000 AND 2015 ORDER BY Life\_expectancy DESC LIMIT 1}
 
@@ -202,16 +203,18 @@ Low Rouge 2 scores but performs well when human evaluations are considered as wh
 
 \section{Discussion}
 
+The observed improvement in exact matching could be seen as a modest step forward even though the improvement does not impact the retrieved data for the test questions. 
+
 The mistakes the models have done seems to be semantic or logic understanding, for example Total\_expenditure instead of Percent\_expenditure, another problem here is that the question is not very specific regarding the expenditure, as the variables does not differ that much. Mistakes could also be misinterpretations of query intents like it misses improvement in question eight in Table~\ref{append:5}.
 
-To enhance the fine-tuning process, increasing the dataset size should be prioritized. Moreover, involving multiple individuals in the creation of SQL queries would mitigate potential biases and reduce time constraints. Experimenting with alternative hyperparameters during training, as well as adjusting the values of existing ones, could further refine model performance.
+To enhance the fine-tuning process, increasing the dataset size should be prioritized. Moreover, involving multiple individuals in the creation of SQL queries would mitigate potential biases in the training and validation data and reduce time constraints. Experimenting with alternative hyperparameters during training, as well as adjusting the values of existing ones, could further refine model performance.
 
 While T5 has been utilized as the retriever, research suggests that other models, such as ColBERT, demonstrate promising results for this task \cite{Lin2023}.
 
-The generated analyses are good as long as the queries are correct or does not work, but when the incorrect data have been received, here an addition could be added. As for the eight question in Table~\ref{append:7} the generated answers make 
+The generated analyses are good as long as the queries are correct or does not work, but when the incorrect data have been received, here an addition could be added for the large language model to search in it's knowledge base to see if the retrieved data is reasonable.
 
 Limitations of this project:
-The primary limitation of this project is the time required to craft questions and corresponding SQL queries, which can be both time-consuming and inefficient. Access to computational resources have also been limited. 
+The primary limitation of this project is the time required to craft questions and corresponding SQL queries, which have been both time-consuming and inefficient. Access to computational resources have also been limited. 
 
 
 
