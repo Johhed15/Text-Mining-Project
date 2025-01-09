@@ -17,9 +17,15 @@ This repository explores a comparative study on the performance of SQL-tuned T5 
 - **Scope**: Covers a range of years (2000-2015) with detailed metadata for realistic query generation.
 
 ### Key Components
-1. **SQL-Tuned T5**: A T5 model( [juierror/flan-t5-text2sql-with-schema-v2](https://huggingface.co/juierror/flan-t5-text2sql-with-schema-v2)) adapted to translate natural language queries into SQL statements.
+1. **SQL-Tuned T5**: A T5 model([juierror/flan-t5-text2sql-with-schema-v2](https://huggingface.co/juierror/flan-t5-text2sql-with-schema-v2)) adapted to translate natural language queries into SQL statements.
 2. **Fine-Tuned T5**: A T5 model fine-tuned on self made questions and SQL queries.
 3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
 
 
 The paper is written in latex in the ACL-style, the acl files are from [Acl-org github repo](https://github.com/acl-org/acl-style-files/) and are needed to go from latex to pdf.
+
+## Question dictionary to Latex table
+
+I've also made a function to go from the dictionaries with questions i python to latex so its easier and faster to add them as tables in the report. This function can be found here: [Dict to Latex](https://github.com/Johhed15/Text-Mining-Project/blob/main/latex_table_generator).
+
+
