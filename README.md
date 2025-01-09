@@ -22,7 +22,7 @@ This repository explores a comparative study on the performance of SQL-tuned T5 
 3. **RAG Pipeline**: Combines retrieval (SQL query execution) with generation (Llama-based answering  [meta-llama/Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)) to provide robust query responses.
 
 
-The paper is written in latex in the ACL-style, the acl files are from [Acl-org github repo](https://github.com/acl-org/acl-style-files/) and are needed to go from latex to pdf.
+The paper is written in latex in the ACL-style, the acl files are from [Acl-org github repo](https://github.com/acl-org/acl-style-files/) and are needed to go from [latex](https://github.com/Johhed15/Text-Mining-Project/blob/main/Text-mining-project.tex) to [pdf](https://github.com/Johhed15/Text-Mining-Project/blob/main/Text_mining.pdf).
 
 ## Question dictionary to Latex table
 
