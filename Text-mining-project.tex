@@ -209,7 +209,7 @@ The mistakes the models have done seems to be semantic or logic understanding, f
 
 To enhance the fine-tuning process, increasing the dataset size should be prioritized. Moreover, involving multiple individuals in the creation of SQL queries would mitigate potential biases in the training and validation data and reduce time constraints. Experimenting with alternative hyperparameters during training, as well as adjusting the values of existing ones, could further refine model performance.
 
-While T5 has been utilized as the retriever, research suggests that other models, such as ColBERT, demonstrate promising results for this task \cite{Lin2023}.
+While Flan-T5 has been utilized as the retriever, research suggests that other models/methods, such as ColBERT \cite{Lin2023} and TAPAS(based on BERT) \cite{QAdens}, demonstrate promising results for the text to SQL task.
 
 The generated analyses are good as long as the queries are correct or does not work, but when the incorrect data have been received, here an addition could be added for the large language model to search in it's knowledge base to see if the retrieved data is reasonable.
 
